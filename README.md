@@ -13,32 +13,33 @@ Project environment launcher CLI
 
 ---
 
-`runit` lets you register a project alias, generate a `.runit.yml` from the current repo, and launch that environment from anywhere.
+`runit` registers project aliases, generates a `.runit.yml`, and launches your dev environment from anywhere.
 
 ## Install
 
-Clone the repo and install dependencies:
+Latest release:
 
 ```bash
-bun install
-```
-
-Run it directly during development:
-
-```bash
-bun run src/cli.ts --help
-```
-
-If you want a local `runit` command, link it with Bun:
-
-```bash
-bun link
+curl -fsSL https://raw.githubusercontent.com/PedroElizalde01/runit/main/install.sh | bash
 ```
 
 Then run:
 
 ```bash
 runit --help
+```
+
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PedroElizalde01/runit/main/install.sh | \
+  bash -s -- --version v0.1.1
+```
+
+If `runit` is not found after install, add this to your shell profile:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ## Usage
@@ -97,9 +98,20 @@ runit --list
 ## Build
 
 ```bash
+bun install
 bun run check
-bun run src/cli.ts --help
+bun run build
+./dist/runit --help
 ```
+
+## Release
+
+```bash
+git tag v0.1.1
+git push origin main v0.1.1
+```
+
+Pushing a `v*` tag triggers GitHub Actions to build release binaries and publish a GitHub Release.
 
 ## Config
 

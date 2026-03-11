@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset_name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            asset_name: runit-linux-x64
+          - runner: macos-13
+            asset_name: runit-darwin-x64
+          - runner: macos-14
+            asset_name: runit-darwin-arm64
+          - runner: windows-latest
+            asset_name: runit-windows-x64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build standalone binary
+        shell: bash
+        run: bash scripts/build-release.sh --output "dist/${{ matrix.asset_name }}"
+
+      - name: Publish release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.asset_name }}
+          generate_release_notes: true

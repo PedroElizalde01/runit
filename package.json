@@ -1,6 +1,6 @@
 {
   "name": "runit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Production-grade developer CLI for launching project environments from anywhere.",
   "type": "module",
   "bin": {
@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "build": "bash scripts/build-release.sh --output dist/runit",
+    "build:release": "bash scripts/build-release.sh"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.8.4",
