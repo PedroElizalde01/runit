@@ -5,6 +5,7 @@ export type PackageManager = "pnpm" | "npm" | "yarn" | "bun" | "unknown";
 
 export type PackageJsonData = {
   name?: string;
+  bin?: string | Record<string, string>;
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;

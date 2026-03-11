@@ -1,4 +1,4 @@
-name: jims
+name: runit
 root: .
 default: dev
 actions:
@@ -7,4 +7,4 @@ actions:
     tasks:
       - name: app
         cwd: .
-        cmd: npm run dev
+        cmd: bun run check

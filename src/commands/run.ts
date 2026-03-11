@@ -8,7 +8,7 @@ import { loadEnv } from "../core/env.ts";
 import { executeAction } from "../core/executor.ts";
 import { generateConfig } from "../core/generator.ts";
 import { confirmAction } from "../core/interactive.ts";
-import { getProject, registerProject } from "../core/registry.ts";
+import { getProject, registerProject, validateAlias } from "../core/registry.ts";
 import { scanProject } from "../core/scanner.ts";
 import { createShim, getShimPath } from "../core/shim.ts";
 import { expandHome } from "../utils/paths.ts";
@@ -126,6 +126,7 @@ async function bootstrapProject(alias: string, projectRoot: string, overwriteCon
 }
 
 async function ensureProjectReady(alias: string, options: RunProjectOptions): Promise<string> {
+  validateAlias(alias);
   const registeredProjectRoot = await getProject(alias);
   const projectRoot = registeredProjectRoot ? path.resolve(registeredProjectRoot) : process.cwd();
   const hasConfig = await configExists(projectRoot);

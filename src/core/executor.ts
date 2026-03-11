@@ -1,4 +1,5 @@
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import type { Readable } from "node:stream";
 
 import { execa } from "execa";
@@ -11,6 +12,8 @@ type ExecuteActionOptions = {
   environment?: NodeJS.ProcessEnv;
   sessionName?: string;
 };
+
+type ExitSignal = "SIGINT" | "SIGTERM";
 
 function pipePrefixedOutput(stream: Readable | undefined, prefix: string): void {
   if (!stream) {
@@ -41,8 +44,40 @@ function resolveTaskCwd(projectRoot: string, config: RunitConfig, task: Task): s
   return path.resolve(actionRoot, task.cwd);
 }
 
-async function delay(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+function isCanceledError(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === "object" &&
+    "isCanceled" in error &&
+    (error as { isCanceled?: boolean }).isCanceled,
+  );
+}
+
+function createTerminationController(): {
+  abortController: AbortController;
+  cleanup: () => void;
+} {
+  const abortController = new AbortController();
+
+  const abortOnSignal = (signal: ExitSignal) => {
+    if (!abortController.signal.aborted) {
+      abortController.abort(new Error(`Received ${signal}`));
+    }
+  };
+
+  const handleSigint = () => abortOnSignal("SIGINT");
+  const handleSigterm = () => abortOnSignal("SIGTERM");
+
+  process.once("SIGINT", handleSigint);
+  process.once("SIGTERM", handleSigterm);
+
+  return {
+    abortController,
+    cleanup: () => {
+      process.off("SIGINT", handleSigint);
+      process.off("SIGTERM", handleSigterm);
+    },
+  };
 }
 
 async function runSimpleAction(
@@ -53,41 +88,76 @@ async function runSimpleAction(
 ): Promise<void> {
   const tasks = buildDependencyGraph(action.tasks ?? []);
   const runningProcesses: Promise<void>[] = [];
+  const { abortController, cleanup } = createTerminationController();
 
   console.log("[deps] resolving dependencies");
 
-  for (const task of tasks) {
-    const prefix = `[${task.name}] `;
-    const cwd = resolveTaskCwd(projectRoot, config, task);
-    console.log(`${prefix}starting ${task.cmd}`);
+  try {
+    for (const task of tasks) {
+      if (abortController.signal.aborted) {
+        break;
+      }
 
-    const subprocess = execa(task.cmd, {
-      cwd,
-      env: {
-        ...environment,
-        ...task.env,
-      },
-      shell: true,
-      all: true,
-    });
+      const prefix = `[${task.name}] `;
+      const cwd = resolveTaskCwd(projectRoot, config, task);
+      console.log(`${prefix}starting ${task.cmd}`);
 
-    pipePrefixedOutput(subprocess.all, prefix);
-
-    runningProcesses.push(
-      subprocess.then(
-        () => undefined,
-        (error) => {
-          throw new Error(`${prefix}command failed: ${task.cmd}`, { cause: error });
+      const subprocess = execa(`exec ${task.cmd}`, {
+        cwd,
+        env: {
+          ...environment,
+          ...task.env,
         },
-      ),
+        shell: true,
+        all: true,
+        cancelSignal: abortController.signal,
+        cleanup: true,
+        forceKillAfterDelay: 3000,
+      });
+
+      pipePrefixedOutput(subprocess.all, prefix);
+
+      runningProcesses.push(
+        subprocess.then(
+          () => undefined,
+          (error) => {
+            if (abortController.signal.aborted && isCanceledError(error)) {
+              return;
+            }
+
+            throw new Error(`${prefix}command failed: ${task.cmd}`, { cause: error });
+          },
+        ),
+      );
+
+      if (task.delay) {
+        try {
+          await delay(task.delay, undefined, { signal: abortController.signal });
+        } catch (error) {
+          if (!abortController.signal.aborted) {
+            throw error;
+          }
+        }
+      }
+    }
+
+    const results = await Promise.allSettled(runningProcesses);
+
+    if (abortController.signal.aborted) {
+      process.exitCode = 130;
+      return;
+    }
+
+    const firstFailure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
     );
 
-    if (task.delay) {
-      await delay(task.delay);
+    if (firstFailure) {
+      throw firstFailure.reason;
     }
+  } finally {
+    cleanup();
   }
-
-  await Promise.all(runningProcesses);
 }
 
 export async function executeAction(

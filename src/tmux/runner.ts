@@ -4,7 +4,7 @@ import { execa } from "execa";
 
 import { buildDependencyGraph } from "../core/dependencies.ts";
 import { applyWindowLayout, createPanes, createWindow, getPaneId } from "./layout.ts";
-import { attachSession, createSession, ensureTmuxInstalled, sessionExists } from "./session.ts";
+import { attachSession, createSession, ensureTmuxInstalled, killSession, sessionExists } from "./session.ts";
 import type { Pane, RunitConfig, TmuxAction } from "../types/config.ts";
 
 async function runTmux(args: string[]): Promise<void> {
@@ -78,16 +78,14 @@ async function seedPaneCommands(
       ...pane.env,
     }).filter(([, value]) => value !== undefined);
 
-    await sendPaneCommand(target, `cd ${escapeShellValue(cwd)}`);
+    const commandParts = [`cd ${escapeShellValue(cwd)}`];
 
     if (envEntries.length > 0) {
-      await sendPaneCommand(
-        target,
-        `export ${envEntries.map(([key, value]) => escapeEnvAssignment(key, String(value))).join(" ")}`,
-      );
+      commandParts.push(`export ${envEntries.map(([key, value]) => escapeEnvAssignment(key, String(value))).join(" ")}`);
     }
 
-    await sendPaneCommand(target, pane.cmd);
+    commandParts.push(`exec ${pane.cmd}`);
+    await sendPaneCommand(target, commandParts.join(" && "));
 
     if (pane.delay) {
       await delay(pane.delay);
@@ -110,8 +108,8 @@ export async function launchTmuxWorkspace(
   console.log(`Panes: ${countPanes(action)}`);
 
   if (await sessionExists(sessionName)) {
-    await attachSession(sessionName);
-    return;
+    console.log("[tmux] resetting existing session");
+    await killSession(sessionName);
   }
 
   await createSession(sessionName);

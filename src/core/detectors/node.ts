@@ -76,6 +76,48 @@ function resolveNodeFallback(scanResult: ScanResult): string | undefined {
   return undefined;
 }
 
+function normalizeCommand(command: string): string {
+  return command.trim().replace(/\s+/g, " ");
+}
+
+function getBinEntryPaths(packageJson: PackageJsonData | undefined): string[] {
+  if (!packageJson?.bin) {
+    return [];
+  }
+
+  if (typeof packageJson.bin === "string") {
+    return [packageJson.bin];
+  }
+
+  return Object.values(packageJson.bin);
+}
+
+function isSelfReferentialCliScript(
+  packageJson: PackageJsonData | undefined,
+  scriptCommand: string | undefined,
+): boolean {
+  if (!scriptCommand) {
+    return false;
+  }
+
+  const normalizedCommand = normalizeCommand(scriptCommand);
+
+  return getBinEntryPaths(packageJson).some((binPath) => {
+    const variants = [binPath, `./${binPath}`];
+
+    return variants.some((variant) => {
+      const normalizedVariant = normalizeCommand(variant);
+      return [
+        `bun run ${normalizedVariant}`,
+        `bun ${normalizedVariant}`,
+        `node ${normalizedVariant}`,
+        `tsx ${normalizedVariant}`,
+        `ts-node ${normalizedVariant}`,
+      ].includes(normalizedCommand);
+    });
+  });
+}
+
 function resolveCommand(
   packageJson: PackageJsonData | undefined,
   packageManager: PackageManager,
@@ -88,10 +130,16 @@ function resolveCommand(
     return buildScriptCommand(packageManager, "start:dev");
   }
 
-  for (const scriptName of ["dev", "start", "serve"] as const) {
-    if (scripts[scriptName]) {
-      return buildScriptCommand(packageManager, scriptName);
+  for (const scriptName of ["dev", "start", "serve", "check", "test"] as const) {
+    if (!scripts[scriptName]) {
+      continue;
     }
+
+    if (isSelfReferentialCliScript(packageJson, scripts[scriptName])) {
+      continue;
+    }
+
+    return buildScriptCommand(packageManager, scriptName);
   }
 
   return rootFallback;

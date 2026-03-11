@@ -4,6 +4,23 @@ import path from "node:path";
 import { getConfigDir, getRegistryPath } from "../utils/paths.ts";
 
 type ProjectRegistry = Record<string, string>;
+const RESERVED_ALIASES = new Set(["runit"]);
+
+function normalizeAlias(alias: string): string {
+  return alias.trim().toLowerCase();
+}
+
+export function validateAlias(alias: string): void {
+  const normalizedAlias = normalizeAlias(alias);
+
+  if (!normalizedAlias) {
+    throw new Error("Project alias cannot be empty.");
+  }
+
+  if (RESERVED_ALIASES.has(normalizedAlias)) {
+    throw new Error(`Project alias "${alias}" is reserved. Choose a different alias.`);
+  }
+}
 
 async function ensureRegistryDir(): Promise<void> {
   await mkdir(getConfigDir(), { recursive: true });
@@ -44,6 +61,7 @@ async function writeRegistry(registry: ProjectRegistry): Promise<void> {
 }
 
 export async function registerProject(alias: string, projectPath: string): Promise<void> {
+  validateAlias(alias);
   const registry = await readRegistry();
   registry[alias] = path.resolve(projectPath);
   await writeRegistry(registry);

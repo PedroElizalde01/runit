@@ -52,6 +52,10 @@ export async function createSession(sessionName: string): Promise<void> {
   await runTmux(["new-session", "-d", "-s", sessionName]);
 }
 
+export async function killSession(sessionName: string): Promise<void> {
+  await runTmux(["kill-session", "-t", sessionName]);
+}
+
 export async function attachSession(sessionName: string): Promise<void> {
   await execa("tmux", ["attach", "-t", sessionName], { stdio: "inherit" });
 }
