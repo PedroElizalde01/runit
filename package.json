@@ -1,0 +1,26 @@
+{
+  "name": "runit",
+  "version": "0.1.0",
+  "description": "Production-grade developer CLI for launching project environments from anywhere.",
+  "type": "module",
+  "bin": {
+    "runit": "src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.8.4",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "execa": "^9.5.2",
+    "js-yaml": "^4.1.0",
+    "yaml": "^2.5.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2"
+  }
+}
