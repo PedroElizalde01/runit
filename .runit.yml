@@ -1,0 +1,10 @@
+name: jims
+root: .
+default: dev
+actions:
+  dev:
+    mode: simple
+    tasks:
+      - name: app
+        cwd: .
+        cmd: npm run dev
