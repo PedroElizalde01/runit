@@ -1,0 +1,118 @@
+#!/usr/bin/env bun
+
+import { Command } from "commander";
+
+import { checkProject } from "./commands/check.ts";
+import { doctorProject, previewProjectEnv, previewProjectGraph, previewProjectPlan } from "./commands/doctor.ts";
+import { editProject } from "./commands/edit.ts";
+import { listRegisteredProjects } from "./commands/list.ts";
+import { removeRegisteredProject } from "./commands/remove.ts";
+import { runProject } from "./commands/run.ts";
+
+type CliOptions = {
+  check?: boolean;
+  doctor?: boolean;
+  env?: boolean;
+  edit?: boolean;
+  graph?: boolean;
+  interactive?: boolean;
+  list?: boolean;
+  plan?: boolean;
+  regenerate?: boolean;
+  remove?: boolean;
+};
+
+const program = new Command();
+
+program
+  .name("runit")
+  .description("Run registered project environments from anywhere.")
+  .argument("[alias]", "registered project alias")
+  .option("--check", "validate required tools for a registered project")
+  .option("--doctor", "inspect a registered project")
+  .option("--env", "show loaded environment variables")
+  .option("--edit", "edit the project config")
+  .option("--graph", "show service dependency graph")
+  .option("--interactive", "use interactive prompts with --edit")
+  .option("--plan", "preview the execution plan")
+  .option("-r, --regenerate", "re-scan the project and overwrite .runit.yml")
+  .option("--remove", "remove a registered project and its shim")
+  .option("--list", "list registered projects")
+  .action(async (alias: string | undefined, options: CliOptions) => {
+    const activeFlags = [
+      options.check,
+      options.doctor,
+      options.env,
+      options.edit,
+      options.graph,
+      options.list,
+      options.plan,
+      options.remove,
+    ].filter(Boolean).length;
+
+    if (activeFlags > 1) {
+      throw new Error("Use only one primary action flag at a time.");
+    }
+
+    if (options.list) {
+      await listRegisteredProjects();
+      return;
+    }
+
+    if (!alias) {
+      throw new Error("An alias is required unless --list is used.");
+    }
+
+    if (options.interactive && !options.edit) {
+      throw new Error("--interactive can only be used with --edit.");
+    }
+
+    if (options.regenerate && (options.check || options.doctor || options.env || options.edit || options.graph || options.list || options.plan || options.remove)) {
+      throw new Error("--regenerate can only be used when running a project.");
+    }
+
+    if (options.check) {
+      await checkProject(alias);
+      return;
+    }
+
+    if (options.doctor) {
+      await doctorProject(alias);
+      return;
+    }
+
+    if (options.env) {
+      await previewProjectEnv(alias);
+      return;
+    }
+
+    if (options.edit) {
+      await editProject(alias, { interactive: options.interactive });
+      return;
+    }
+
+    if (options.graph) {
+      await previewProjectGraph(alias);
+      return;
+    }
+
+    if (options.plan) {
+      await previewProjectPlan(alias);
+      return;
+    }
+
+    if (options.remove) {
+      await removeRegisteredProject(alias);
+      return;
+    }
+
+    await runProject(alias, { regenerate: options.regenerate });
+  });
+
+try {
+  await program.parseAsync(process.argv);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`${message}\n`);
+  process.exitCode = 1;
+}
