@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { Command } from "commander";
+import { Command, Option } from "commander";
 
 import { checkProject } from "./commands/check.ts";
 import { doctorProject, previewProjectEnv, previewProjectGraph, previewProjectPlan } from "./commands/doctor.ts";
@@ -20,6 +20,7 @@ type CliOptions = {
   plan?: boolean;
   regenerate?: boolean;
   remove?: boolean;
+  start?: boolean;
 };
 
 const program = new Command();
@@ -28,6 +29,7 @@ program
   .name("runit")
   .description("Run registered project environments from anywhere.")
   .argument("[alias]", "registered project alias")
+  .addOption(new Option("--start", "start the registered project").hideHelp())
   .option("--check", "validate required tools for a registered project")
   .option("--doctor", "inspect a registered project")
   .option("--env", "show loaded environment variables")
@@ -48,6 +50,7 @@ program
       options.list,
       options.plan,
       options.remove,
+      options.start,
     ].filter(Boolean).length;
 
     if (activeFlags > 1) {
@@ -106,7 +109,7 @@ program
       return;
     }
 
-    await runProject(alias, { regenerate: options.regenerate });
+    await runProject(alias, { regenerate: options.regenerate, start: options.start });
   });
 
 try {

@@ -10,7 +10,7 @@ export function getShimPath(alias: string): string {
 export async function createShim(alias: string): Promise<void> {
   await mkdir(getShimDir(), { recursive: true });
 
-  const contents = `#!/usr/bin/env bash\nrunit ${alias} "$@"\n`;
+  const contents = `#!/usr/bin/env bash\nrunit --start "${alias}" "$@"\n`;
   const shimPath = getShimPath(alias);
 
   await writeFile(shimPath, contents, "utf8");

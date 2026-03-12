@@ -15,6 +15,22 @@ Project environment launcher CLI
 
 `runit` registers project aliases, generates a `.runit.yml`, and launches your dev environment from anywhere.
 
+## Stack detection
+
+`runit` currently detects these stack types:
+
+- `node`
+- `python`
+- `docker`
+- `mixed`
+- `unknown`
+
+Notes:
+
+- `mixed` means more than one supported runtime was detected in the same project.
+- `unknown` means no supported runtime matched, so you may need to edit the generated config manually.
+- More coming soon.
+
 ## Install
 
 Latest release:
@@ -44,17 +60,19 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Usage
 
-Register the current project and start it:
+Register the current project and create the alias command:
 
 ```bash
 runit my-app
 ```
 
-Once registered, the generated shim can also be used directly:
+Then run it with the generated shim:
 
 ```bash
 my-app
 ```
+
+If the alias already exists, running `runit my-app` will only tell you that it is already registered.
 
 Inspect and manage a registered project:
 
@@ -83,7 +101,7 @@ runit --list
 
 ## Commands
 
-- `runit <alias>`: register if needed and run the default action
+- `runit <alias>`: register if needed, otherwise report that the alias already exists
 - `runit <alias> --regenerate`: rescan the repo and refresh `.runit.yml`
 - `runit <alias> --doctor`: inspect config, stack detection, and tool availability
 - `runit <alias> --check`: validate required tools and config paths
