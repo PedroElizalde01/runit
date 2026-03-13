@@ -40,6 +40,38 @@ const tmuxActionSchema = z.object({
   windows: z.array(windowSchema).min(1),
 });
 
+function addUniqueNameIssues(
+  items: Array<{ name: string; dependsOn?: string[] }>,
+  ctx: z.RefinementCtx,
+  basePath: Array<string | number>,
+): void {
+  const seen = new Set<string>();
+
+  for (const [index, item] of items.entries()) {
+    if (seen.has(item.name)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate service name "${item.name}"`,
+        path: [...basePath, index, "name"],
+      });
+    }
+
+    seen.add(item.name);
+  }
+
+  for (const [index, item] of items.entries()) {
+    for (const dependency of item.dependsOn ?? []) {
+      if (!seen.has(dependency)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Unknown dependency "${dependency}"`,
+          path: [...basePath, index, "dependsOn"],
+        });
+      }
+    }
+  }
+}
+
 const actionSchema = z.discriminatedUnion("mode", [simpleActionSchema, tmuxActionSchema]);
 
 const configSchema = z
@@ -56,6 +88,19 @@ const configSchema = z
         message: `Default action "${config.default}" is not defined in actions.`,
         path: ["default"],
       });
+    }
+
+    for (const [actionName, action] of Object.entries(config.actions)) {
+      if (action.mode === "simple") {
+        addUniqueNameIssues(action.tasks ?? [], ctx, ["actions", actionName, "tasks"]);
+        continue;
+      }
+
+      addUniqueNameIssues(
+        action.windows.flatMap((window) => window.panes),
+        ctx,
+        ["actions", actionName, "windows"],
+      );
     }
   });
 

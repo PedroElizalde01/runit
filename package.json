@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "bun run src/cli.ts",
     "check": "tsc --noEmit",
+    "test": "bun test",
     "build": "bash scripts/build-release.sh --output dist/runit",
     "build:release": "bash scripts/build-release.sh"
   },

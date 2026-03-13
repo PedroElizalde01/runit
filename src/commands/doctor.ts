@@ -38,10 +38,16 @@ function formatCheck(installed: boolean): string {
   return installed ? "✓" : "✗";
 }
 
-export function printExecutionPlanFromConfig(config: RunitConfig): void {
-  const action = config.actions[config.default];
+function printBanner(title: string): void {
+  const line = "-".repeat(title.length + 4);
+  console.log(`+${line}+`);
+  console.log(`|  ${title}  |`);
+  console.log(`+${line}+\n`);
+}
 
-  console.log("Execution plan:\n");
+export function printExecutionPlanFromConfig(config: RunitConfig): void {
+  printBanner("Execution Plan");
+  const action = config.actions[config.default];
   console.log(`Mode: ${action.mode}\n`);
 
   if (action.mode === "tmux") {
@@ -100,6 +106,7 @@ export async function previewProjectGraph(alias: string): Promise<void> {
 
   try {
     const config = await loadConfig(projectRoot);
+    printBanner("Service Graph");
     console.log(visualizeDependencyGraph(getDefaultActionItems(config)));
   } catch (error) {
     throw new Error(formatConfigError(error));
@@ -121,6 +128,7 @@ export async function previewProjectEnv(alias: string): Promise<void> {
     const config = await loadConfig(projectRoot);
     const env = await loadEnv(projectRoot, config.default);
 
+    printBanner("Environment");
     console.log("Loaded environment variables:\n");
 
     const entries = Object.keys(env.values).sort((left, right) => left.localeCompare(right));
@@ -164,7 +172,9 @@ export async function doctorProject(alias: string): Promise<void> {
   const tools = await checkTools(["tmux", "docker", ...inferRequiredTools(config, detection)]);
   const toolMap = new Map(tools.map((tool) => [tool.name, tool]));
   const warnings = await validateConfigPaths(projectRoot, config);
+  const configuredServices = getDefaultActionItems(config).map((item) => item.name);
 
+  printBanner("Project Doctor");
   console.log(`Project: ${alias}`);
   console.log(`Path: ${projectRoot}\n`);
 
@@ -177,7 +187,7 @@ export async function doctorProject(alias: string): Promise<void> {
   console.log(`  docker ${formatCheck(detection.services.some((service) => service.runtime === "docker"))}\n`);
 
   console.log("Services detected:");
-  printList(detection.services.map((service) => service.name));
+  printList(configuredServices);
   console.log("");
 
   if (detection.packageManager) {

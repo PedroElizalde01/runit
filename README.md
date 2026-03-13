@@ -113,6 +113,287 @@ runit --list
 - `runit <alias> --remove`: remove the registered project and generated shim
 - `runit --list`: list registered projects
 
+## Terminal Examples
+
+Examples below use a sample monorepo with three detected services: `postgres`, `api`, and `web`.
+
+### `runit my-app` (first run)
+
+```text
+$ runit my-app
+┌────────────────────────────────────────────────────────────┐
+│  █▀█ █ █ █▄ █ █ ▀█▀                                        │
+│  █▀▄ █▄█ █ ▀█ █  █                                         │
+│                                                            │
+│ alias      my-app                                          │
+│ status     registered                                      │
+│ command    ~/.local/bin/my-app                             │
+│ root       ~/code/my-app                                   │
+├────────────────────────────────────────────────────────────┤
+│ stack      mixed                                           │
+│ package    npm                                             │
+│ frameworks Docker Compose, Express, Vite                   │
+│ services   postgres, api, web                              │
+├────────────────────────────────────────────────────────────┤
+│ action     dev                                             │
+│ mode       tmux                                            │
+│ windows    1 (services)                                    │
+│ panes      3 (postgres, api, web)                          │
+│ layout     tiled                                           │
+├────────────────────────────────────────────────────────────┤
+│ next       my-app                                          │
+└────────────────────────────────────────────────────────────┘
+```
+
+### `runit my-app` (already registered)
+
+```text
+$ runit my-app
+┌────────────────────────────────────────────────────────────┐
+│  █▀█ █ █ █▄ █ █ ▀█▀                                        │
+│  █▀▄ █▄█ █ ▀█ █  █                                         │
+│                                                            │
+│ alias      my-app                                          │
+│ status     already registered                              │
+│ command    ~/.local/bin/my-app                             │
+│ root       ~/code/my-app                                   │
+├────────────────────────────────────────────────────────────┤
+│ stack      mixed                                           │
+│ package    npm                                             │
+│ frameworks Docker Compose, Express, Vite                   │
+│ services   postgres, api, web                              │
+├────────────────────────────────────────────────────────────┤
+│ action     dev                                             │
+│ mode       tmux                                            │
+│ windows    1 (services)                                    │
+│ panes      3 (postgres, api, web)                          │
+│ layout     tiled                                           │
+├────────────────────────────────────────────────────────────┤
+│ next       my-app                                          │
+└────────────────────────────────────────────────────────────┘
+```
+
+### `runit my-app --doctor`
+
+```text
+$ runit my-app --doctor
++------------------+
+|  Project Doctor  |
++------------------+
+
+Project: my-app
+Path: /home/user/code/my-app
+
+Config file:
+  /home/user/code/my-app/.runit.yml ✓
+
+Stack detection:
+  mixed ✓
+  prisma ✗
+  docker ✓
+
+Services detected:
+  postgres
+  api
+  web
+
+Package manager:
+  npm
+
+Tmux:
+  installed ✓
+
+Docker:
+  installed ✓
+
+Status:
+  ready
+
+Default action services: 3
+```
+
+### `runit my-app --check`
+
+```text
+$ runit my-app --check
++--------------------+
+| Environment Check  |
++--------------------+
+
+tmux ✓
+node ✓
+docker ✓
+npm ✓
+```
+
+### `runit my-app --plan`
+
+```text
+$ runit my-app --plan
++------------------+
+|  Execution Plan  |
++------------------+
+
+Mode: tmux
+
+Window: services
+  pane postgres -> docker compose up postgres (.)
+  pane api -> npm run dev (apps/api)
+  pane web -> npm run dev (apps/web)
+```
+
+### `runit my-app --graph`
+
+```text
+$ runit my-app --graph
++-----------------+
+|  Service Graph  |
++-----------------+
+
+postgres
+  ↓
+api
+  ↓
+web
+```
+
+### `runit my-app --env`
+
+```text
+$ runit my-app --env
++---------------+
+|  Environment  |
++---------------+
+
+Loaded environment variables:
+
+API_URL=***
+DATABASE_URL=***
+SESSION_SECRET=***
+```
+
+### `runit my-app --edit`
+
+```text
+$ runit my-app --edit
+# opens $EDITOR with .runit.yml
+# no terminal output on success
+```
+
+### `runit my-app --edit --interactive`
+
+```text
+$ runit my-app --edit --interactive
+? Edit action "dev"
+❯ Add service
+  Remove service
+  Change command
+  Change cwd
+  Toggle mode (current: tmux)
+  Save changes
+  Cancel
+
+↑↓ navigate • ⏎ select
+
+✔ Edit action "dev" Cancel
+Edit cancelled.
+```
+
+### `runit my-app --regenerate`
+
+```text
+$ runit my-app --regenerate
+[scan] scanning project
+
+[detect] stack: mixed
+[detect] package manager: npm
+[detect] frameworks:
+  - Docker Compose
+  - Express
+  - Vite
+[detect] services:
+  - postgres
+  - api
+  - web
+
+[config] proposed changes:
+
+(no changes)
+
+┌────────────────────────────────────────────────────────────┐
+│  █▀█ █ █ █▄ █ █ ▀█▀                                        │
+│  █▀▄ █▄█ █ ▀█ █  █                                         │
+│                                                            │
+│ alias      my-app                                          │
+│ status     already registered                              │
+│ command    ~/.local/bin/my-app                             │
+│ root       ~/code/my-app                                   │
+├────────────────────────────────────────────────────────────┤
+│ stack      mixed                                           │
+│ package    npm                                             │
+│ frameworks Docker Compose, Express, Vite                   │
+│ services   postgres, api, web                              │
+├────────────────────────────────────────────────────────────┤
+│ action     dev                                             │
+│ mode       tmux                                            │
+│ windows    1 (services)                                    │
+│ panes      3 (postgres, api, web)                          │
+│ layout     tiled                                           │
+├────────────────────────────────────────────────────────────┤
+│ next       my-app                                          │
+└────────────────────────────────────────────────────────────┘
+```
+
+### `runit my-app --remove`
+
+```text
+$ runit my-app --remove
+Removed project "my-app" (/home/user/code/my-app)
+```
+
+### `runit --list`
+
+```text
+$ runit --list
+Registered projects:
+
+my-app -> ~/code/my-app
+```
+
+```text
+$ runit --list
+Registered projects:
+
+(none)
+```
+
+### `runit --help`
+
+```text
+$ runit --help
+Usage: runit [options] [alias]
+
+Run registered project environments from anywhere.
+
+Arguments:
+  alias             registered project alias
+
+Options:
+  --check           validate required tools for a registered project
+  --doctor          inspect a registered project
+  --env             show loaded environment variables
+  --edit            edit the project config
+  --graph           show service dependency graph
+  --interactive     use interactive prompts with --edit
+  --plan            preview the execution plan
+  -r, --regenerate  re-scan the project and overwrite .runit.yml
+  --remove          remove a registered project and its shim
+  --list            list registered projects
+  -h, --help        display help for command
+```
+
+`--start` is intentionally omitted here because it is an internal flag used by the generated shim command.
+
 ## Build
 
 ```bash

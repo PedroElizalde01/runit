@@ -39,7 +39,9 @@ export async function checkProject(alias: string): Promise<void> {
     ...(await validateConfigPaths(projectRoot, config)),
   ];
 
-  console.log("Checking environment...\n");
+  console.log("+--------------------+");
+  console.log("| Environment Check  |");
+  console.log("+--------------------+\n");
 
   for (const tool of tools) {
     console.log(`${tool.name} ${tool.installed ? "✓" : "✗"}`);

@@ -3,7 +3,7 @@
   viewBox="0 0 256 256"
   aria-hidden="true"
 >
-  <circle cx="128" cy="128" r="112" fill="#000" />
+  <circle cx="128" cy="128" r="112" fill="#2563eb" />
   <path
     d="M98 82V174M98 128C98 106 114 92 136 92C150 92 161 99 168 112"
     fill="none"

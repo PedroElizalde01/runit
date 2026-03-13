@@ -4,7 +4,7 @@ import path from "node:path";
 import { execa } from "execa";
 
 import type { ProjectDetection } from "./detectors/types.ts";
-import type { RunitConfig } from "../types/config.ts";
+import type { Pane, RunitConfig, Task } from "../types/config.ts";
 
 export type ToolCheck = {
   name: string;
@@ -32,22 +32,25 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function getActionTaskPaths(config: RunitConfig): Array<{ name: string; cwd: string }> {
+function getConfigEntries(config: RunitConfig): Array<Task | Pane> {
   return Object.values(config.actions).flatMap((action) => {
     if (action.mode === "tmux") {
-      return action.windows.flatMap((window) =>
-        window.panes.map((pane) => ({
-          name: pane.name,
-          cwd: pane.cwd,
-        })),
-      );
+      return action.windows.flatMap((window) => window.panes);
     }
 
-    return (action.tasks ?? []).map((task) => ({
-      name: task.name,
-      cwd: task.cwd,
-    }));
+    return action.tasks ?? [];
   });
+}
+
+function getActionTaskPaths(config: RunitConfig): Array<{ name: string; cwd: string }> {
+  return getConfigEntries(config).map((entry) => ({
+    name: entry.name,
+    cwd: entry.cwd,
+  }));
+}
+
+function commandUses(command: string, prefix: string): boolean {
+  return command === prefix || command.startsWith(`${prefix} `);
 }
 
 export async function checkTool(name: string): Promise<ToolCheck> {
@@ -88,6 +91,7 @@ export async function checkTools(names: string[]): Promise<ToolCheck[]> {
 
 export function inferRequiredTools(config: RunitConfig, detection: ProjectDetection): string[] {
   const tools = new Set<string>();
+  const entries = getConfigEntries(config);
 
   for (const action of Object.values(config.actions)) {
     if (action.mode === "tmux") {
@@ -95,20 +99,37 @@ export function inferRequiredTools(config: RunitConfig, detection: ProjectDetect
     }
   }
 
-  if (detection.services.some((service) => service.runtime === "node")) {
+  if (
+    detection.services.some((service) => service.runtime === "node") ||
+    entries.some((entry) => /(^|\s)(npm|pnpm|yarn|bun|node)\b/.test(entry.cmd))
+  ) {
     tools.add("node");
   }
 
-  if (detection.services.some((service) => service.runtime === "python")) {
+  if (
+    detection.services.some((service) => service.runtime === "python") ||
+    entries.some((entry) => /(^|\s)(python|uvicorn|flask)\b/.test(entry.cmd))
+  ) {
     tools.add("python");
   }
 
-  if (detection.services.some((service) => service.runtime === "docker")) {
+  if (
+    detection.services.some((service) => service.runtime === "docker") ||
+    entries.some((entry) => commandUses(entry.cmd, "docker"))
+  ) {
     tools.add("docker");
   }
 
   if (detection.packageManager && detection.packageManager !== "unknown") {
     tools.add(detection.packageManager);
+  } else {
+    for (const entry of entries) {
+      for (const manager of ["pnpm", "npm", "yarn", "bun"] as const) {
+        if (commandUses(entry.cmd, manager)) {
+          tools.add(manager);
+        }
+      }
+    }
   }
 
   return [...tools];

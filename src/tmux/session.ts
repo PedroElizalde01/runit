@@ -57,5 +57,11 @@ export async function killSession(sessionName: string): Promise<void> {
 }
 
 export async function attachSession(sessionName: string): Promise<void> {
+  if (!process.stdout.isTTY) {
+    console.log(`[tmux] session "${sessionName}" is ready`);
+    console.log(`[tmux] attach manually with: tmux attach -t ${sessionName}`);
+    return;
+  }
+
   await execa("tmux", ["attach", "-t", sessionName], { stdio: "inherit" });
 }
