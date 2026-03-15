@@ -59,7 +59,7 @@ Install a specific version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PedroElizalde01/runit/main/install.sh | \
-  bash -s -- --version v0.2.1
+  bash -s -- --version v0.2.2
 ```
 
 If `runit` is not found after install, add this to your shell profile:
@@ -416,8 +416,8 @@ bun run build
 ## Release
 
 ```bash
-git tag v0.2.1
-git push origin main v0.2.1
+git tag v0.2.2
+git push origin main v0.2.2
 ```
 
 Pushing a `v*` tag triggers GitHub Actions to build release binaries and publish a GitHub Release.

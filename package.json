@@ -1,6 +1,6 @@
 {
   "name": "runit",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Production-grade developer CLI for launching project environments from anywhere.",
   "type": "module",
   "bin": {

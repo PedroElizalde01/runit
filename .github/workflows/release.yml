@@ -12,17 +12,17 @@ permissions:
 jobs:
   build:
     name: Build ${{ matrix.asset_name }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
-            asset_name: runit-linux-x64
-          - runner: macos-13
-            asset_name: runit-darwin-x64
-          - runner: macos-14
-            asset_name: runit-darwin-arm64
+          - asset_name: runit-linux-x64
+            build_target: bun-linux-x64-baseline
+          - asset_name: runit-darwin-x64
+            build_target: bun-darwin-x64
+          - asset_name: runit-darwin-arm64
+            build_target: bun-darwin-arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
 
       - name: Build standalone binary
         shell: bash
-        run: bash scripts/build-release.sh --output "dist/${{ matrix.asset_name }}"
+        run: bash scripts/build-release.sh --target "${{ matrix.build_target }}" --output "dist/${{ matrix.asset_name }}"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

@@ -3,17 +3,19 @@
 set -euo pipefail
 
 OUTPUT=""
+TARGET=""
 
 usage() {
   cat <<'EOF'
 Build a standalone runit binary for the current host platform.
 
 Usage:
-  scripts/build-release.sh [--output PATH]
+  scripts/build-release.sh [--output PATH] [--target TARGET]
 
 Examples:
   scripts/build-release.sh
   scripts/build-release.sh --output dist/runit
+  scripts/build-release.sh --target bun-darwin-arm64 --output dist/runit-darwin-arm64
 EOF
 }
 
@@ -21,6 +23,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --output)
       OUTPUT="${2:-}"
+      shift 2
+      ;;
+    --target)
+      TARGET="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -62,6 +68,39 @@ OS="$(detect_os)"
 ARCH="$(detect_arch)"
 EXTENSION=""
 
+if [[ -n "${TARGET}" ]]; then
+  case "${TARGET}" in
+    bun-linux-x64|bun-linux-x64-baseline|bun-linux-x64-modern|bun-linux-x64-musl)
+      OS="linux"
+      ARCH="x64"
+      ;;
+    bun-linux-arm64|bun-linux-arm64-musl)
+      OS="linux"
+      ARCH="arm64"
+      ;;
+    bun-darwin-x64|bun-darwin-x64-baseline)
+      OS="darwin"
+      ARCH="x64"
+      ;;
+    bun-darwin-arm64)
+      OS="darwin"
+      ARCH="arm64"
+      ;;
+    bun-windows-x64|bun-windows-x64-baseline|bun-windows-x64-modern)
+      OS="windows"
+      ARCH="x64"
+      ;;
+    bun-windows-arm64)
+      OS="windows"
+      ARCH="arm64"
+      ;;
+    *)
+      echo "Unsupported Bun target: ${TARGET}" >&2
+      exit 1
+      ;;
+  esac
+fi
+
 if [[ "${OS}" == "windows" ]]; then
   EXTENSION=".exe"
 fi
@@ -73,4 +112,10 @@ fi
 mkdir -p "$(dirname "${OUTPUT}")"
 
 echo "Building ${OUTPUT}"
-bun build src/cli.ts --compile --outfile "${OUTPUT}"
+BUILD_ARGS=(src/cli.ts --compile --outfile "${OUTPUT}")
+
+if [[ -n "${TARGET}" ]]; then
+  BUILD_ARGS+=(--target "${TARGET}")
+fi
+
+bun build "${BUILD_ARGS[@]}"
