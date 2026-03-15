@@ -15,6 +15,14 @@ Project environment launcher CLI
 
 `runit` registers project aliases, generates a `.runit.yml`, and launches your dev environment from anywhere.
 
+## Platform support
+
+- Linux x64: supported
+- macOS x64 and arm64: supported
+- Windows: not officially supported yet
+
+For Windows today, use WSL if you want the same Bash and tmux-oriented workflow.
+
 ## Stack detection
 
 `runit` currently detects these stack types:
@@ -39,6 +47,8 @@ Latest release:
 curl -fsSL https://raw.githubusercontent.com/PedroElizalde01/runit/main/install.sh | bash
 ```
 
+The installer supports Linux and macOS.
+
 Then run:
 
 ```bash
@@ -49,7 +59,7 @@ Install a specific version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PedroElizalde01/runit/main/install.sh | \
-  bash -s -- --version v0.2.0
+  bash -s -- --version v0.2.1
 ```
 
 If `runit` is not found after install, add this to your shell profile:
@@ -406,8 +416,8 @@ bun run build
 ## Release
 
 ```bash
-git tag v0.2.0
-git push origin main v0.2.0
+git tag v0.2.1
+git push origin main v0.2.1
 ```
 
 Pushing a `v*` tag triggers GitHub Actions to build release binaries and publish a GitHub Release.
